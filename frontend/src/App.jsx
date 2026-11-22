@@ -11,9 +11,7 @@ import Privacy from "./pages/Privacy";
 import Calendar from "./pages/Calendar";
 
 export const Logo = () => (
-  <span className="logo">
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6" /></svg>
-  </span>
+  <img src="/logo.svg" alt="Logo de AdaptFit" className="logo-img" />
 );
 
 const MENU = [["dashboard", "Inicio"], ["rutina", "Mi rutina"], ["calendario", "Calendario"], ["entrenar", "Entrenar"], ["historial", "Historial"], ["perfil", "Perfil"], ["privacidad", "Privacidad"]];
@@ -23,10 +21,10 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [listo, setListo] = useState(false);
   const [page, setPage] = useState("landing");
-  const [ctx, setCtx] = useState(0);
+  const [ctx, setCtx] = useState(null);
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem("adaptfit_theme", theme); }, [theme]);
 
-  const go = (p, c = 0) => { setPage(p); setCtx(c); window.scrollTo(0, 0); };
+  const go = (p, c = null) => { setPage(p); setCtx(c); window.scrollTo(0, 0); };
   const cargar = () => api.me().then((u) => { setUser(u); return u; }).catch(() => { api.logout(); setUser(null); return null; });
   useEffect(() => { if (api.hayToken()) cargar().then((u) => { if (u) setPage("dashboard"); setListo(true); }); else setListo(true); }, []);
   const onAuth = cargar;

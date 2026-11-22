@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import models  # noqa: F401  (registra las tablas)
 from .auth import hashear, verificar
 from .database import Base, SessionLocal, agregar_columnas_faltantes, engine
-from .routes import exercises, profiles, routines, sessions, users
+from .routes import exercises, profiles, recommendations, routines, sessions, solicitudes, users
 
 load_dotenv()
 
@@ -54,6 +54,8 @@ app.include_router(exercises.router)
 app.include_router(profiles.router)
 app.include_router(routines.router)
 app.include_router(sessions.router)
+app.include_router(solicitudes.router)
+app.include_router(recommendations.router)
 
 
 @app.get("/")

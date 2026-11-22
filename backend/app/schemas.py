@@ -1,5 +1,5 @@
 # Esquemas Pydantic: validan los datos que entran y definen los que salen de la API.
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 
@@ -61,7 +61,7 @@ class EjercicioOut(EjercicioIn):
 
 
 # ---- Perfil de entrenamiento (Caso 3) ----
-Objetivo = Literal["masa", "grasa", "condicion"]
+Objetivo = Literal["masa", "grasa", "fuerza", "resistencia", "condicion"]
 DiaSemana = Literal["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
 
@@ -70,6 +70,7 @@ class PerfilIn(BaseModel):
     nivel: Dificultad
     dias_disponibles: List[DiaSemana] = Field(min_length=1)
     equipamiento: List[Equipamiento] = Field(min_length=1)
+    edad: int = Field(ge=14, le=100)  # obligatoria
     peso_kg: Optional[float] = Field(default=None, ge=30, le=300)
     altura_cm: Optional[float] = Field(default=None, ge=100, le=250)
     tipo_alimentacion: Optional[str] = ""
@@ -77,6 +78,7 @@ class PerfilIn(BaseModel):
 
 
 class PerfilOut(PerfilIn):
+    edad: Optional[int] = None  # perfiles antiguos pueden no tenerla; al guardar se exige
     model_config = {"from_attributes": True}
 
 
@@ -84,6 +86,7 @@ class PerfilOut(PerfilIn):
 class RegistroEjercicioIn(BaseModel):
     id_ejercicio: int
     realizado: bool = False
+    series_realizadas: Optional[int] = Field(default=None, ge=0, le=50)
     repeticiones_realizadas: Optional[int] = Field(default=None, ge=0, le=1000)
     peso: Optional[float] = Field(default=None, ge=0, le=1000)
     tiempo_segundos: Optional[int] = Field(default=None, ge=0)
@@ -92,6 +95,7 @@ class RegistroEjercicioIn(BaseModel):
 class SesionIn(BaseModel):
     dia_entrenamiento: Optional[str] = None
     nombre_entrenamiento: str
+    fecha: Optional[date] = None       # día real en que se hizo (si no, hoy)
     esfuerzo_percibido: int = Field(ge=1, le=10)
     duracion_minutos: Optional[int] = Field(default=None, ge=0, le=600)
     ejercicios: List[RegistroEjercicioIn] = Field(min_length=1)
@@ -105,3 +109,37 @@ class SesionOut(BaseModel):
     esfuerzo_percibido: Optional[int] = None
     ejercicios_realizados: int
     ejercicios_total: int
+
+
+class GenerarRutinaIn(BaseModel):
+    distribucion: Optional[str] = None
+    cambiar_ejercicios: bool = False   # evita repetir los ejercicios de la rutina actual
+    mas_suave: bool = False            # usa ejercicios un nivel por debajo del nivel del usuario
+
+
+# ---- Solicitudes de datos (Caso 6) ----
+class SolicitudIn(BaseModel):
+    tipo: Literal["eliminacion", "rectificacion"]
+
+
+class SolicitudOut(BaseModel):
+    id_solicitud: int
+    tipo: str
+    estado: str
+    fecha: datetime
+
+
+class SolicitudAdminOut(SolicitudOut):
+    correo: str
+
+
+# ---- Recomendaciones de IA ----
+class RecomendacionOut(BaseModel):
+    id_recomendacion: int
+    categoria: str
+    titulo: str
+    descripcion: str
+    motivo: str
+    accion_sugerida: str
+    fecha: datetime
+    model_config = {"from_attributes": True}

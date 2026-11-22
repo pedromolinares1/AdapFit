@@ -37,18 +37,21 @@ const api = {
   me: () => http("/usuarios/yo"),                                  // GET  -> {id_usuario,nombre,correo,rol,estado,fecha_autorizacion}
   actualizarUsuario: (d) => http("/usuarios/yo", "PUT", d),        // PUT  {nombre,correo}
   // Caso 3
-  perfil: () => http("/perfil").catch(() => null),                 // GET  -> {objetivo,nivel,dias_disponibles[],equipamiento[],peso_kg,altura_cm,tipo_alimentacion,alimentos_evitar} | 404
+  perfil: () => http("/perfil").catch(() => null),                 // GET  -> {objetivo,nivel,dias_disponibles[],equipamiento[],edad,peso_kg,altura_cm,tipo_alimentacion,alimentos_evitar} | 404
   guardarPerfil: async ({ nombre, ...perfil }) => { await http("/usuarios/yo", "PUT", { nombre }); return http("/perfil", "PUT", perfil); },
   // Caso 4: el backend genera y archiva la anterior
-  generarRutina: () => http("/rutina/generar", "POST"),
-  rutinaCompleta: () => http("/rutina/activa").catch(() => null), // -> {plan:{tipo,frecuencia,motivo}, entrenamientos:[{nombre,dia,ejercicios:[{id_ejercicio,nombre,grupo_muscular,imagen_url,series,repeticiones,descanso_segundos,carga_sugerida,instrucciones}]}]}
+  generarRutina: (opciones) => http("/rutina/generar", "POST", opciones), // opciones opcionales: {distribucion, cambiar_ejercicios, mas_suave}
+  rutinaCompleta: () => http("/rutina/activa").catch(() => null), // -> {fecha_creacion, plan:{clave,tipo,frecuencia,motivo,opciones:[{clave,nombre}]}, entrenamientos:[{nombre,dia,ejercicios:[{id_ejercicio,nombre,grupo_muscular,imagen_url,series,repeticiones,descanso_segundos,carga_sugerida,instrucciones}]}]}
   rutina: () => api.rutinaCompleta().then((r) => r && r.entrenamientos),
   // Caso 5
-  guardarSesion: (s) => http("/sesiones", "POST", s),              // {dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios:[{id_ejercicio,realizado,repeticiones_realizadas,peso}]}
+  guardarSesion: (s) => http("/sesiones", "POST", s),              // {fecha (opcional, AAAA-MM-DD),dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios:[{id_ejercicio,realizado,repeticiones_realizadas,peso}]}
   sesiones: () => http("/sesiones"),                               // -> [{id_sesion,fecha,dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios_realizados,ejercicios_total}]
+  sesion: (id) => http(`/sesiones/${id}`),                         // -> {...sesión, ejercicios:[{nombre,realizado,series_realizadas,repeticiones_realizadas,peso,anterior:{fecha,...}|null}]}
   // Caso 6
   solicitudes: () => http("/solicitudes"),                         // -> [{id_solicitud,tipo,estado,fecha}]
   solicitarEliminacion: () => http("/solicitudes", "POST", { tipo: "eliminacion" }),
+  solicitudesPendientes: () => http("/solicitudes/pendientes"),   // admin -> [{id_solicitud,tipo,fecha,correo}]
+  atenderSolicitud: (id) => http(`/solicitudes/${id}/atender`, "POST"), // admin: la eliminación borra la cuenta y sus datos
   cancelarSolicitud: (id) => http(`/solicitudes/${id}`, "DELETE"),
   // Caso 7 (solo rol admin)
   ejercicios: () => http("/ejercicios"),
@@ -61,6 +64,7 @@ const api = {
     return cacheRepdb.filter((x) => [x.name_es, x.name_en, x.body_part, x.equipment].join(" ").toLowerCase().includes(q)).slice(0, 12).map(aNuestro);
   },
   // IA (si falla, el resto de la app sigue funcionando)
+  generarRecomendaciones: () => http("/recomendaciones/generar", "POST"), // la IA genera 2-3 recomendaciones nuevas
   recomendaciones: () => http("/recomendaciones").catch(() => []), // -> [{id_recomendacion,categoria,titulo,descripcion,motivo,accion_sugerida}]
 };
 export default api;

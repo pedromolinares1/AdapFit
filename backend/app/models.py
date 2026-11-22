@@ -34,6 +34,7 @@ class PerfilEntrenamiento(Base):
     nivel = Column(String(50))                # principiante | intermedio | avanzado
     dias_disponibles = Column(JSON, default=list)
     equipamiento = Column(JSON, default=list)
+    edad = Column(Integer)
     peso_kg = Column(Float)
     altura_cm = Column(Float)
     tipo_alimentacion = Column(String(100))
@@ -61,6 +62,7 @@ class Rutina(Base):
     nombre = Column(String(100))
     objetivo = Column(String(100))
     estado = Column(String(20), default="activa")   # activa | archivada
+    distribucion = Column(String(40))               # clave de la división semanal usada
     fecha_creacion = Column(DateTime, default=datetime.now)
     detalles = relationship("DetalleRutina", cascade="all, delete-orphan")
 
@@ -99,6 +101,7 @@ class RegistroEjercicio(Base):
     id_sesion = Column(Integer, ForeignKey("sesion_entrenamiento.id_sesion"), nullable=False)
     id_ejercicio = Column(Integer, ForeignKey("ejercicio.id_ejercicio"), nullable=False)
     realizado = Column(Boolean, default=False)
+    series_realizadas = Column(Integer)
     repeticiones_realizadas = Column(Integer)
     peso = Column(Float)
     tiempo_segundos = Column(Integer)

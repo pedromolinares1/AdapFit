@@ -6,6 +6,7 @@ const VACIO = { nombre: "", descripcion: "", grupo_muscular: "", dificultad: "pr
 export default function Admin({ user }) {
   const [v, setV] = useState(0);
   const { data: lista, cargando, error } = useLoad(() => api.ejercicios(), [v]);
+  const { data: sol } = useLoad(() => api.solicitudesPendientes(), [v]);
   const [f, setF] = useState(VACIO), [toast, setToast] = useState(null), [q, setQ] = useState(""), [res, setRes] = useState([]);
   if (user.rol !== "admin") return <div className="card empty"><h3>Sección solo para administradores</h3></div>;
   const avisar = (texto, tipo) => setToast({ texto, tipo, id: Date.now() });
@@ -16,6 +17,14 @@ export default function Admin({ user }) {
   const campo = (k, t) => <label>{t}<input required={k === "nombre" || k === "grupo_muscular"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>;
   return (
     <>
+      {sol && sol.length > 0 && (
+        <div className="card"><h3>Solicitudes de datos pendientes</h3>
+          {sol.map((s) => (
+            <div key={s.id_solicitud} className="row between" style={{ margin: ".5rem 0" }}>
+              <span>{s.correo} · <b>{s.tipo === "eliminacion" ? "eliminación" : "rectificación"}</b> · <span className="mu">{new Date(s.fecha).toLocaleDateString("es-CO")}</span></span>
+              <button className="btn sm ghost" onClick={() => confirm("Se eliminarán de forma definitiva la cuenta y los datos de este usuario. ¿Continuar?") && run(() => api.atenderSolicitud(s.id_solicitud), "Solicitud atendida.")}>Atender</button>
+            </div>))}
+        </div>)}
       <h2>Catálogo de ejercicios</h2>
       {toast && <Toast key={toast.id} {...toast} onClose={() => setToast(null)} />}
       <form className="card form" onSubmit={buscar}>
