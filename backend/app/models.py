@@ -34,6 +34,8 @@ class PerfilEntrenamiento(Base):
     nivel = Column(String(50))                # principiante | intermedio | avanzado
     dias_disponibles = Column(JSON, default=list)
     equipamiento = Column(JSON, default=list)
+    peso_kg = Column(Float)
+    altura_cm = Column(Float)
     tipo_alimentacion = Column(String(100))
     alimentos_evitar = Column(Text)
 

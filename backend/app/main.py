@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import models  # noqa: F401  (registra las tablas)
 from .auth import hashear, verificar
-from .database import Base, SessionLocal, engine
-from .routes import exercises, users
+from .database import Base, SessionLocal, agregar_columnas_faltantes, engine
+from .routes import exercises, profiles, routines, sessions, users
 
 load_dotenv()
 
@@ -38,17 +38,22 @@ def crear_admin():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    agregar_columnas_faltantes()
     crear_admin()
     yield
 
 
 app = FastAPI(title="AdaptFit API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",  # cualquier puerto local (Vite cambia de puerto si el 5173 está ocupado)
+                   
                    allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(users.auth_router)
 app.include_router(users.router)
 app.include_router(exercises.router)
+app.include_router(profiles.router)
+app.include_router(routines.router)
+app.include_router(sessions.router)
 
 
 @app.get("/")

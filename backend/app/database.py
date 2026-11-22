@@ -15,3 +15,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def agregar_columnas_faltantes():
+    """Si agregamos una columna a un modelo, la añade a la tabla existente sin borrar datos.
+    (Solución sencilla para el MVP; en un proyecto grande se usaría Alembic.)"""
+    from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    for tabla in Base.metadata.sorted_tables:
+        if not insp.has_table(tabla.name):
+            continue
+        existentes = {c["name"] for c in insp.get_columns(tabla.name)}
+        for col in tabla.columns:
+            if col.name not in existentes:
+                with engine.begin() as con:
+                    con.execute(text(f'ALTER TABLE {tabla.name} ADD COLUMN {col.name} {col.type.compile(engine.dialect)}'))
