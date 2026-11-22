@@ -1,69 +1,63 @@
-// Capa de servicios. HOY guarda datos en localStorage para poder probar el frontend sin backend.
-// Cuando exista FastAPI, solo se reemplaza el interior de cada función por un fetch() (mismos nombres).
-// Admin de prueba: admin@adaptfit.com / Admin123
-const K = "adaptfit_db";
-const NIV = ["principiante", "intermedio", "avanzado"];
-const EX = [
-  ["Sentadilla con peso corporal", "piernas", "principiante", "peso corporal"],
-  ["Flexiones", "pecho", "principiante", "peso corporal"],
-  ["Plancha", "core", "principiante", "peso corporal"],
-  ["Zancadas con mancuernas", "piernas", "intermedio", "mancuernas"],
-  ["Press de pecho con mancuernas", "pecho", "principiante", "mancuernas"],
-  ["Remo con mancuerna", "espalda", "principiante", "mancuernas"],
-  ["Remo con banda elástica", "espalda", "principiante", "bandas elásticas"],
-  ["Press militar con mancuernas", "hombros", "intermedio", "mancuernas"],
-  ["Sentadilla con barra", "piernas", "intermedio", "gimnasio"],
-  ["Peso muerto", "espalda", "avanzado", "gimnasio"],
-  ["Jalón al pecho", "espalda", "principiante", "gimnasio"],
-  ["Curl con banda elástica", "brazos", "principiante", "bandas elásticas"],
-].map((e, i) => ({ id: i + 1, nombre: e[0], descripcion: "", grupo: e[1], nivel: e[2], equipo: e[3],
-  instrucciones: "Controla el movimiento y mantén la espalda neutra.", activo: true }));
-const PARAMS = { masa: { series: 4, reps: "8-12", descanso: 90 }, grasa: { series: 3, reps: "12-15", descanso: 60 }, condicion: { series: 3, reps: "15-20", descanso: 45 } };
+// CONTRATO CON EL BACKEND (FastAPI). Cada función = un endpoint. Nombres de campos = columnas del modelo de datos.
+// Autenticación: el backend devuelve un token; se envía como "Authorization: Bearer <token>".
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const REPDB = "https://exercise-dataset.com"; // RepDB: archivos estáticos (no es una API con llaves)
 
-const save = (d) => localStorage.setItem(K, JSON.stringify(d));
-const db = () => {
-  let d = JSON.parse(localStorage.getItem(K) || "null");
-  if (!d) { d = { users: [{ id: 1, email: "admin@adaptfit.com", password: "Admin123", rol: "admin" }], sessions: [], exercises: EX, token: null }; save(d); }
+async function http(ruta, metodo = "GET", cuerpo) {
+  const t = localStorage.getItem("adaptfit_token");
+  let r;
+  try {
+    r = await fetch(BASE + ruta, { method: metodo, headers: { "Content-Type": "application/json", ...(t && { Authorization: `Bearer ${t}` }) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  } catch { throw new Error("No hay conexión con el servidor."); }
+  if (r.status === 204) return null;
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "No se pudo completar la solicitud.");
   return d;
-};
-const cur = (d) => d.users.find((u) => u.id === d.token) || null;
+}
+const guardarToken = (d) => { localStorage.setItem("adaptfit_token", d.token); return d.usuario; };
+
+// ---- RepDB: se descarga el JSON una vez y se traduce al formato de nuestra tabla "ejercicio" ----
+let cacheRepdb = null;
+const NIVEL = { beginner: "principiante", intermediate: "intermedio", advanced: "avanzado" };
+const equipo = (e) => (!e || /body/.test(e) ? "peso corporal" : /dumbbell|kettlebell/.test(e) ? "mancuernas" : /band/.test(e) ? "bandas elásticas" : "gimnasio");
+const aNuestro = (x) => ({
+  repdb_id: x.id, nombre: x.name_es || x.name_en, descripcion: x.description_es || "", grupo_muscular: x.body_part || "",
+  dificultad: NIVEL[x.difficulty] || "principiante", equipamiento: equipo(x.equipment),
+  instrucciones: (x.instructions_es || []).join(" "), imagen_url: `${REPDB}/${x.images?.flat?.start || x.images?.flat?.main || ""}`,
+});
 
 const api = {
-  me: () => cur(db()),
-  register({ email, password, consent }) {
-    const d = db();
-    if (!consent) throw new Error("Debes aceptar la política de tratamiento de datos para registrarte.");
-    if (password.length < 6) throw new Error("La contraseña debe tener al menos 6 caracteres.");
-    if (d.users.some((u) => u.email === email)) throw new Error("Ese correo ya está registrado. Inicia sesión.");
-    const u = { id: Date.now(), email, password, rol: "usuario", consentimiento: new Date().toISOString(), perfil: null, eliminacion: null };
-    d.users.push(u); d.token = u.id; save(d); return u;
+  hayToken: () => !!localStorage.getItem("adaptfit_token"),
+  // Caso 1 y 2
+  registro: (correo, contrasena, acepta_politica) => http("/auth/registro", "POST", { correo, contrasena, acepta_politica }).then(guardarToken), // POST /auth/registro
+  login: (correo, contrasena) => http("/auth/login", "POST", { correo, contrasena }).then(guardarToken),                                        // POST /auth/login
+  logout: () => localStorage.removeItem("adaptfit_token"),
+  me: () => http("/usuarios/yo"),                                  // GET  -> {id_usuario,nombre,correo,rol,estado,fecha_autorizacion}
+  actualizarUsuario: (d) => http("/usuarios/yo", "PUT", d),        // PUT  {nombre,correo}
+  // Caso 3
+  perfil: () => http("/perfil").catch(() => null),                 // GET  -> {objetivo,nivel,dias_disponibles[],equipamiento[],tipo_alimentacion,alimentos_evitar} | 404
+  guardarPerfil: async ({ nombre, ...perfil }) => { await http("/usuarios/yo", "PUT", { nombre }); return http("/perfil", "PUT", perfil); },
+  // Caso 4: el backend genera y archiva la anterior
+  generarRutina: () => http("/rutina/generar", "POST"),
+  rutina: () => http("/rutina/activa").then((r) => r.entrenamientos).catch(() => null), // -> [{nombre,dia,ejercicios:[{id_ejercicio,nombre,imagen_url,series,repeticiones,descanso_segundos,carga_sugerida,instrucciones}]}]
+  // Caso 5
+  guardarSesion: (s) => http("/sesiones", "POST", s),              // {dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios:[{id_ejercicio,realizado,repeticiones_realizadas,peso}]}
+  sesiones: () => http("/sesiones"),                               // -> [{id_sesion,fecha,dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios_realizados,ejercicios_total}]
+  // Caso 6
+  solicitudes: () => http("/solicitudes"),                         // -> [{id_solicitud,tipo,estado,fecha}]
+  solicitarEliminacion: () => http("/solicitudes", "POST", { tipo: "eliminacion" }),
+  cancelarSolicitud: (id) => http(`/solicitudes/${id}`, "DELETE"),
+  // Caso 7 (solo rol admin)
+  ejercicios: () => http("/ejercicios"),
+  crearEjercicio: (e) => http("/ejercicios", "POST", e),
+  editarEjercicio: (id, e) => http(`/ejercicios/${id}`, "PUT", e),
+  activarEjercicio: (id, activo) => http(`/ejercicios/${id}/activo`, "PATCH", { activo }),
+  buscarRepdb: async (texto) => {
+    if (!cacheRepdb) { try { cacheRepdb = (await (await fetch(`${REPDB}/exercises.json`)).json()).exercises; } catch { throw new Error("No se pudo cargar el catálogo de RepDB."); } }
+    const q = texto.toLowerCase();
+    return cacheRepdb.filter((x) => [x.name_es, x.name_en, x.body_part, x.equipment].join(" ").toLowerCase().includes(q)).slice(0, 12).map(aNuestro);
   },
-  login(email, password) {
-    const d = db(); const u = d.users.find((x) => x.email === email && x.password === password);
-    if (!u) throw new Error("Correo o contraseña incorrectos.");
-    d.token = u.id; save(d); return u;
-  },
-  logout() { const d = db(); d.token = null; save(d); },
-  updateUser(cambios) { const d = db(); const u = cur(d); Object.assign(u, cambios); save(d); return u; },
-  // Rutina generada con reglas propias: filtra por nivel, equipo y ejercicios activos
-  routine() {
-    const d = db(); const u = cur(d); const p = u && u.perfil; if (!p || !p.dias.length) return null;
-    const pool = d.exercises.filter((e) => e.activo && NIV.indexOf(e.nivel) <= NIV.indexOf(p.nivel) && (e.equipo === "peso corporal" || p.equipo.includes(e.equipo)));
-    const n = p.dias.length, par = PARAMS[p.objetivo];
-    return p.dias.map((dia, k) => {
-      let lista = pool.filter((_, i) => i % n === k).slice(0, 4);
-      if (!lista.length) lista = pool.slice(0, 4);
-      return { nombre: `Entrenamiento ${String.fromCharCode(65 + k)}`, dia, ejercicios: lista.map((e) => ({ ...e, ...par })) };
-    });
-  },
-  saveSession(s) { const d = db(); d.sessions.push({ ...s, id: Date.now(), userId: d.token, fecha: new Date().toISOString() }); save(d); },
-  sessions() { const d = db(); return d.sessions.filter((s) => s.userId === d.token).reverse(); },
-  exercises() { return db().exercises; },
-  saveExercise(e) {
-    const d = db(); if (cur(d)?.rol !== "admin") throw new Error("Sin permiso.");
-    if (e.id) d.exercises = d.exercises.map((x) => (x.id === e.id ? { ...x, ...e } : x));
-    else d.exercises.push({ ...e, id: Date.now(), activo: true });
-    save(d);
-  },
+  // IA (si falla, el resto de la app sigue funcionando)
+  recomendaciones: () => http("/recomendaciones").catch(() => []), // -> [{id_recomendacion,categoria,titulo,descripcion,motivo,accion_sugerida}]
 };
 export default api;

@@ -57,3 +57,13 @@ fieldset{border:0;padding:0;margin:0}legend{color:var(--mu);font-size:.9rem;marg
 @keyframes pop{from{opacity:0;transform:scale(.8)}}
 @media(max-width:800px){.hero{grid-template-columns:1fr;gap:2.5rem}.toggle button{padding:.3rem .6rem;font-size:.75rem}.links{order:3;flex-basis:100%}.two{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.thumb{width:100%;max-width:140px;border-radius:12px;margin-bottom:.4rem}
+.foot{padding:1.5rem 1.25rem;text-align:center;font-size:.85rem;border-top:1px solid var(--line)}.foot a{color:var(--mu)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.dia{aspect-ratio:1;border-radius:12px;border:1px solid transparent;transition:background .2s,border-color .2s}
+.dia:hover{border-color:var(--g)}.dia.toca{border-color:var(--g)}.dia.hecho{background:var(--g);color:var(--on);font-weight:700}
+.dia.hoy{box-shadow:0 0 0 2px var(--tx)}.dia.sel:not(.hecho){background:color-mix(in srgb,var(--g) 20%,var(--card))}
+.cal-h{margin-bottom:.8rem}.mes{text-transform:capitalize;font-family:var(--head)}
+.leyenda{display:flex;gap:1rem;align-items:center;font-size:.85rem;margin-top:1rem}.pt{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--g)}.pt.hecho{background:var(--g)}
+.links{scrollbar-width:none}.links::-webkit-scrollbar{display:none}
+.links.app{order:3;flex-basis:100%;flex-wrap:wrap}
