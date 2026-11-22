@@ -1,20 +1,23 @@
 import { useState } from "react";
 import api from "../services/api";
 import useLoad, { Cargando } from "../services/useLoad";
+import Toast from "../components/Toast";
 const VACIO = { nombre: "", descripcion: "", grupo_muscular: "", dificultad: "principiante", equipamiento: "peso corporal", instrucciones: "" };
 export default function Admin({ user }) {
   const [v, setV] = useState(0);
   const { data: lista, cargando, error } = useLoad(() => api.ejercicios(), [v]);
-  const [f, setF] = useState(VACIO), [msg, setMsg] = useState(""), [q, setQ] = useState(""), [res, setRes] = useState([]);
+  const [f, setF] = useState(VACIO), [toast, setToast] = useState(null), [q, setQ] = useState(""), [res, setRes] = useState([]);
   if (user.rol !== "admin") return <div className="card empty"><h3>Sección solo para administradores</h3></div>;
-  const run = async (fn, ok) => { try { await fn(); setV(v + 1); setMsg(ok); } catch (x) { setMsg(x.message); } };
+  const avisar = (texto, tipo) => setToast({ texto, tipo, id: Date.now() });
+  const fallo = (x) => avisar(x.message, /ya está/.test(x.message) ? "aviso" : "error");
+  const run = async (fn, ok) => { try { await fn(); setV(v + 1); avisar(ok, "ok"); } catch (x) { fallo(x); } };
   const guardar = (e) => { e.preventDefault(); run(async () => { f.id_ejercicio ? await api.editarEjercicio(f.id_ejercicio, f) : await api.crearEjercicio(f); setF(VACIO); }, "Ejercicio guardado."); };
-  const buscar = async (e) => { e.preventDefault(); try { setRes(await api.buscarRepdb(q)); setMsg(""); } catch (x) { setMsg(x.message); } };
+  const buscar = async (e) => { e.preventDefault(); try { setRes(await api.buscarRepdb(q)); } catch (x) { fallo(x); } };
   const campo = (k, t) => <label>{t}<input required={k === "nombre" || k === "grupo_muscular"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>;
   return (
     <>
       <h2>Catálogo de ejercicios</h2>
-      {msg && <p role="status" className="ok">{msg}</p>}
+      {toast && <Toast key={toast.id} {...toast} onClose={() => setToast(null)} />}
       <form className="card form" onSubmit={buscar}>
         <h3>Importar desde RepDB</h3>
         <div className="row"><input value={q} placeholder="Busca por nombre, músculo o equipo (en inglés o español)" onChange={(e) => setQ(e.target.value)} style={{ flex: 1 }} /><button className="btn">Buscar</button></div>

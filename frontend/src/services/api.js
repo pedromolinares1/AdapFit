@@ -20,8 +20,10 @@ const guardarToken = (d) => { localStorage.setItem("adaptfit_token", d.token); r
 let cacheRepdb = null;
 const NIVEL = { beginner: "principiante", intermediate: "intermedio", advanced: "avanzado" };
 const equipo = (e) => (!e || /body/.test(e) ? "peso corporal" : /dumbbell|kettlebell/.test(e) ? "mancuernas" : /band/.test(e) ? "bandas elásticas" : "gimnasio");
+const GRUPO = { upper_legs: "piernas", lower_legs: "pantorrillas", chest: "pecho", back: "espalda", shoulders: "hombros", upper_arms: "brazos", lower_arms: "antebrazos", waist: "abdomen", neck: "cuello", cardio: "cardio" };
+const grupo = (g = "") => GRUPO[g] || g.replace(/_/g, " ");
 const aNuestro = (x) => ({
-  repdb_id: x.id, nombre: x.name_es || x.name_en, descripcion: x.description_es || "", grupo_muscular: x.body_part || "",
+  repdb_id: x.id, nombre: x.name_es || x.name_en, descripcion: x.description_es || "", grupo_muscular: grupo(x.body_part),
   dificultad: NIVEL[x.difficulty] || "principiante", equipamiento: equipo(x.equipment),
   instrucciones: (x.instructions_es || []).join(" "), imagen_url: `${REPDB}/${x.images?.flat?.start || x.images?.flat?.main || ""}`,
 });
@@ -35,11 +37,12 @@ const api = {
   me: () => http("/usuarios/yo"),                                  // GET  -> {id_usuario,nombre,correo,rol,estado,fecha_autorizacion}
   actualizarUsuario: (d) => http("/usuarios/yo", "PUT", d),        // PUT  {nombre,correo}
   // Caso 3
-  perfil: () => http("/perfil").catch(() => null),                 // GET  -> {objetivo,nivel,dias_disponibles[],equipamiento[],tipo_alimentacion,alimentos_evitar} | 404
+  perfil: () => http("/perfil").catch(() => null),                 // GET  -> {objetivo,nivel,dias_disponibles[],equipamiento[],peso_kg,altura_cm,tipo_alimentacion,alimentos_evitar} | 404
   guardarPerfil: async ({ nombre, ...perfil }) => { await http("/usuarios/yo", "PUT", { nombre }); return http("/perfil", "PUT", perfil); },
   // Caso 4: el backend genera y archiva la anterior
   generarRutina: () => http("/rutina/generar", "POST"),
-  rutina: () => http("/rutina/activa").then((r) => r.entrenamientos).catch(() => null), // -> [{nombre,dia,ejercicios:[{id_ejercicio,nombre,imagen_url,series,repeticiones,descanso_segundos,carga_sugerida,instrucciones}]}]
+  rutinaCompleta: () => http("/rutina/activa").catch(() => null), // -> {plan:{tipo,frecuencia,motivo}, entrenamientos:[{nombre,dia,ejercicios:[{id_ejercicio,nombre,grupo_muscular,imagen_url,series,repeticiones,descanso_segundos,carga_sugerida,instrucciones}]}]}
+  rutina: () => api.rutinaCompleta().then((r) => r && r.entrenamientos),
   // Caso 5
   guardarSesion: (s) => http("/sesiones", "POST", s),              // {dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios:[{id_ejercicio,realizado,repeticiones_realizadas,peso}]}
   sesiones: () => http("/sesiones"),                               // -> [{id_sesion,fecha,dia_entrenamiento,nombre_entrenamiento,esfuerzo_percibido,ejercicios_realizados,ejercicios_total}]

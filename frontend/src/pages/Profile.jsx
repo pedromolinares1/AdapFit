@@ -3,7 +3,7 @@ import api from "../services/api";
 import useLoad, { Cargando } from "../services/useLoad";
 export const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const EQUIPO = ["gimnasio", "mancuernas", "bandas elásticas", "peso corporal"];
-const BASE = { objetivo: "masa", nivel: "principiante", dias_disponibles: [], equipamiento: [], tipo_alimentacion: "", alimentos_evitar: "" };
+const BASE = { objetivo: "masa", nivel: "principiante", dias_disponibles: [], equipamiento: [], peso_kg: "", altura_cm: "", tipo_alimentacion: "", alimentos_evitar: "" };
 
 export default function Profile(props) {
   const { data, cargando, error } = useLoad(() => api.perfil());
@@ -17,7 +17,7 @@ function Form({ inicial, go, refresh }) {
   const guardar = async (e) => {
     e.preventDefault();
     if (!f.dias_disponibles.length || !f.equipamiento.length) return setErr("Elige al menos un día y un tipo de equipamiento.");
-    try { await api.guardarPerfil(f); await api.generarRutina(); await refresh(); go("rutina"); } catch (x) { setErr(x.message); }
+    try { await api.guardarPerfil({ ...f, peso_kg: f.peso_kg === "" || f.peso_kg == null ? null : +f.peso_kg, altura_cm: f.altura_cm === "" || f.altura_cm == null ? null : +f.altura_cm }); await api.generarRutina(); await refresh(); go("rutina"); } catch (x) { setErr(x.message); }
   };
   const chips = (k, lista) => <div className="chips">{lista.map((d) => <label key={d} className={"chip" + (f[k].includes(d) ? " on" : "")}><input type="checkbox" checked={f[k].includes(d)} onChange={() => alternar(k, d)} />{d}</label>)}</div>;
   return (
@@ -34,6 +34,10 @@ function Form({ inicial, go, refresh }) {
         </select></label>
       <fieldset><legend>Días disponibles</legend>{chips("dias_disponibles", DIAS)}</fieldset>
       <fieldset><legend>Equipamiento</legend>{chips("equipamiento", EQUIPO)}</fieldset>
+      <div className="two">
+        <label>Peso en kg (opcional)<input type="number" min="30" max="300" step="0.1" value={f.peso_kg ?? ""} onChange={(e) => setF({ ...f, peso_kg: e.target.value })} /></label>
+        <label>Altura en cm (opcional)<input type="number" min="100" max="250" value={f.altura_cm ?? ""} onChange={(e) => setF({ ...f, altura_cm: e.target.value })} /></label>
+      </div>
       <label>Tipo de alimentación (opcional)<input value={f.tipo_alimentacion} placeholder="Ej: vegetariana" onChange={(e) => setF({ ...f, tipo_alimentacion: e.target.value })} /></label>
       <label>Alimentos que prefieres evitar (opcional)<input value={f.alimentos_evitar} onChange={(e) => setF({ ...f, alimentos_evitar: e.target.value })} /></label>
       {err && <p className="err" role="alert">{err}</p>}
