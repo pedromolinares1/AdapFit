@@ -8,9 +8,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./adaptfit.db")
 
-# Algunos proveedores entregan "postgres://", que SQLAlchemy ya no acepta.
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# Se fuerza el controlador psycopg2 (el que instala psycopg2-binary en requirements.txt).
+# Así funciona sin importar si la URL llega como "postgres://", "postgresql://" o con otro controlador.
+if DATABASE_URL.startswith(("postgres://", "postgresql://", "postgresql+psycopg://")):
+    DATABASE_URL = "postgresql+psycopg2://" + DATABASE_URL.split("://", 1)[1]
 
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
