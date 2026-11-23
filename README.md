@@ -35,7 +35,7 @@ el sistema le recomienda rutinas ajustadas a su rendimiento. </p>
 <h2>🛠️ Tecnologías</h2>
 <ul> 
   <li><b>Backend:</b> Python, FastAPI, Uvicorn</li> <li><b>Base de datos:</b> PostgreSQL (SQLAlchemy como ORM)</li>
-  <li><b>Frontend:</b> <i>[completar: HTML/CSS/JS, React, etc.]</i></li>
+  <li><b>Frontend:</b> <i> HTML/CSS/JS</i></li>
   <li><b>Despliegue:</b> Render</li> </ul>
   
 <h2>🚀 Ejecución en local</h2> 
