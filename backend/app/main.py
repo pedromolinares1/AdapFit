@@ -44,9 +44,20 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="AdaptFit API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",  # cualquier puerto local (Vite cambia de puerto si el 5173 está ocupado)
-                   
-                   allow_methods=["*"], allow_headers=["*"])
+
+# CORS: se permite el frontend local (cualquier puerto, porque Vite cambia de puerto si el 5173 está ocupado)
+# y, en producción, la dirección del frontend definida en la variable de entorno FRONTEND_URL.
+origenes = []
+if os.getenv("FRONTEND_URL"):
+    origenes.append(os.getenv("FRONTEND_URL").strip().rstrip("/"))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origenes,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(users.auth_router)
 app.include_router(users.router)

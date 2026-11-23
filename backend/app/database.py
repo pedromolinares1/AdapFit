@@ -1,9 +1,23 @@
-# Conexión a SQLite con SQLAlchemy. El archivo adaptfit.db se crea solo en la carpeta backend.
+# Conexión a la base de datos con SQLAlchemy.
+# En tu computador usa SQLite (el archivo adaptfit.db se crea solo en la carpeta backend).
+# En Render usa PostgreSQL: solo hay que definir la variable de entorno DATABASE_URL.
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "sqlite:///./adaptfit.db"  # Para cambiar de motor más adelante (PostgreSQL, SQL Server) solo se cambia esta línea.
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./adaptfit.db")
+
+# Algunos proveedores entregan "postgres://", que SQLAlchemy ya no acepta.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # pool_pre_ping evita errores cuando la conexión quedó cerrada por inactividad.
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 Base = declarative_base()
 
