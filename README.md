@@ -1,7 +1,7 @@
 <div align="center"> <h1>🏋️ AdaptFit</h1> 
 <p><b>Sistema de recomendación de entrenamientos personalizados basado en el rendimiento del usuario</b></p>
 <p> <a href="https://adapfit-8ojd.onrender.com/"><img src="https://img.shields.io/badge/Demo-en%20l%C3%ADnea-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Demo en línea"></a> 
-<a href="https://TU-SERVICIO.onrender.com/docs"><img src="https://img.shields.io/badge/API-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Documentación de la API"></a> </p> 
+<a href="https://repdb.co/"><img src="https://img.shields.io/badge/API-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Documentación de la API"></a> </p> 
 <p> <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"> <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
 <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
 <img src="https://img.shields.io/badge/Render-000000?style=flat-square&logo=render&logoColor=white" alt="Render"> </p> 
